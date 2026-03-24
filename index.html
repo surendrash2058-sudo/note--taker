@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quick Note Taker</title>
+
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 20px;
+            background: #f4f4f4;
+        }
+        
+        textarea {
+            width: 95%;
+            height: 60vh;
+            font-size: 18px;
+            padding: 15px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            background: #316357;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📝 Quick Note Taker</h1>
+
+    <textarea id="note" placeholder="Start typing your note..."></textarea>
+
+    <br><br>
+
+    <button id="save">💾 Save Note</button>
+
+    <script src="renderer.js"></script>
+    <button id="deleteBtn" style="background:#f44336 ;">Delete All</button>
+</body>
+
+</html>
