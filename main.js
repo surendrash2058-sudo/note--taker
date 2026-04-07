@@ -19,7 +19,7 @@ function createWindow() {
    // win.webContents.openDevTools();
 
 }
-// This is a comment
+// This line is modified from GitHub
 app.whenReady().then(() => {
     createWindow();
     app.on('activate', () => {
