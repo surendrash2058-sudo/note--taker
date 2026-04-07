@@ -16,12 +16,15 @@ function createWindow() {
     });
 
     win.loadFile('index.html');
-}
+   // win.webContents.openDevTools();
 
+}
+// This is a comment
 app.whenReady().then(() => {
     createWindow();
     app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) createWindow();
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();}
     });
 });
 
@@ -46,6 +49,8 @@ ipcMain.handle('load-note', async () => {
 
 ipcMain.handle('delete-note', async () => {
     const filePath = path.join(app.getPath('documents'), 'quicknote.txt');
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
     return { success: true };
 });
