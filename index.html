@@ -10,13 +10,22 @@
             font-family: system-ui;
             padding: 20px;
             background: #f4f4f4;
+            margin: 0;
         }
-        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+
+        }
         textarea {
             width: 95%;
             height: 60vh;
             font-size: 18px;
             padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+            font-family: inherit;
         }
         
         button {
@@ -25,22 +34,31 @@
             background: #316357;
             color: white;
             border: none;
+            border-radius:6px;
             cursor: pointer;
+            margin-top: 10px;
         }
+        button:hover{
+            background:#3e7a6e;
+        }
+
     </style>
 </head>
 
 <body>
     <h1>📝 Quick Note Taker</h1>
+    <h2>Test Git and GitHub</h2>
 
     <textarea id="note" placeholder="Start typing your note..."></textarea>
 
     <br><br>
 
     <button id="save">💾 Save Note</button>
+    <button id="deleteBtn" style="background:#f44336 ;">Delete All</button>
+ 
 
     <script src="renderer.js"></script>
-    <button id="deleteBtn" style="background:#f44336 ;">Delete All</button>
+    
 </body>
 
 </html>
