@@ -6,7 +6,7 @@
         "start": "electron . --ozone-platform=x11 --disable-gpu"
     },
     "devDependencies": {
-        "electron": "^40.9.1"
+        "electron": "^40.8.5"
     },
     "keywords": [],
     "author": "",
