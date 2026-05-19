@@ -105,7 +105,7 @@ app.whenReady().then(() => {
     Menu.setApplicationMenu(menu);
 
     // ── System Tray ───────────────────────────
-    tray = new Tray(path.join(__dirname, 'tray-icon.png'));
+    tray = new Tray(path.join(__dirname, 'icon.png'));
 
     const trayMenu = Menu.buildFromTemplate([
         {
@@ -166,9 +166,9 @@ ipcMain.handle('new-note', async () => {
     const win = BrowserWindow.getFocusedWindow();
     const { response } = await dialog.showMessageBox(win, {
         type: 'warning',
-        buttons: ['Discard', 'Cancel'],
+        buttons: ['Delete', 'Cancel'],
         defaultId: 1,
-        message: 'You have unsaved changes. Discard them?'
+        message: 'Do you want to delete this note?'
     });
     return { confirmed: response === 0 };
 });
