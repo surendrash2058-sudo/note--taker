@@ -1,232 +1,404 @@
-// renderer.js
+window.addEventListener('DOMContentLoaded', async() => {
 
-window.addEventListener('DOMContentLoaded', async () => {
+    const noteList =
+        document.getElementById('notes-list');
 
-    // ─────────────────────────────────────────
-    // DOM References
-    // ─────────────────────────────────────────
-    const textarea    = document.getElementById('note');
-    const titleInput  = document.getElementById('note-title');
-    const saveBtn     = document.getElementById('save');
-    const saveAsBtn   = document.getElementById('save-as');
-    const openFileBtn = document.getElementById('open-file');
-    const newNoteBtn  = document.getElementById('new-note');
-    const noteList    = document.getElementById('note-list');
-    const statusEl    = document.getElementById('save_status');
+    const titleInput =
+        document.getElementById('note-title');
 
-    // ─────────────────────────────────────────
-    // State
-    // ─────────────────────────────────────────
-    let notes           = [];       // all notes loaded from JSON
-    let currentNoteId   = null;     // id of the note being edited
-    let lastSavedContent = '';      // tracks unsaved changes
-    let debounceTimer   = null;
+    const textarea =
+        document.getElementById('note');
 
-    // ─────────────────────────────────────────
-    // renderNoteList – draw the sidebar
-    // ─────────────────────────────────────────
-    function renderNoteList() {
-        noteList.innerHTML = ''; // clear existing list
-        notes.forEach(note => {
-            const item = document.createElement('div');
-            item.className = 'note-item' + (note.id === currentNoteId ? ' active' : '');
-            item.innerHTML = `
-                <button class="note-item-delete" data-id="${note.id}">×</button>
-                <div class="note-item-title">${note.title || 'Untitled'}</div>
-                <div class="note-item-date">${new Date(note.updatedAt).toLocaleDateString()}</div>
-            `;
+    const saveBtn =
+        document.getElementById('save');
 
-            // Click note to open it
-            item.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('note-item-delete')) return;
-                await switchNote(note.id);
-            });
+    const saveAsBtn =
+        document.getElementById('save-as');
 
-            // Delete button
-            item.querySelector('.note-item-delete').addEventListener('click', async (e) => {
-                e.stopPropagation();
-                await deleteNote(note.id);
-            });
+    const openFileBtn =
+        document.getElementById('open-file');
 
-            noteList.appendChild(item);
-        });
+    const newNoteBtn =
+        document.getElementById('new-note');
+
+    const increaseFontBtn =
+        document.getElementById('increase-font');
+
+    const decreaseFontBtn =
+        document.getElementById('decrease-font');
+
+    const wordCountEl =
+        document.getElementById('word-count');
+
+    const statusEl =
+        document.getElementById('status');
+
+    let notes = [];
+
+    let currentNoteId = null;
+
+    let autoSaveTimer;
+
+    let fontSize = 16;
+
+    function updateWordCount() {
+
+        const text = textarea.value.trim();
+
+        const words = text === '' ?
+            0 :
+            text.split(/\s+/).length;
+
+        const characters =
+            textarea.value.length;
+
+        wordCountEl.textContent =
+            `Words: ${words} | Characters: ${characters}`;
+
     }
 
-    // ─────────────────────────────────────────
-    // switchNote – load a note into the editor
-    // ─────────────────────────────────────────
-    async function switchNote(id) {
-        // Check for unsaved changes first
-        if (textarea.value !== lastSavedContent) {
-            const result = await window.electronAPI.newNote();
-            if (!result.confirmed) return; // user cancelled – stay on current note
-        }
+    function applyFontSize() {
 
-        // Load the selected note
-        const note = notes.find(n => n.id === id);
+        textarea.style.fontSize =
+            `${fontSize}px`;
+
+    }
+
+    async function saveFontSize() {
+
+        await window.electronAPI.saveSettings({
+            fontSize: fontSize
+        });
+
+    }
+
+    function renderNoteList() {
+
+        noteList.innerHTML = '';
+
+        notes.forEach(note => {
+
+            const noteItem =
+                document.createElement('div');
+
+            noteItem.className = 'note-item';
+
+            if (note.id === currentNoteId) {
+
+                noteItem.classList.add('active');
+
+            }
+
+            const noteTitle =
+                document.createElement('div');
+
+            noteTitle.className = 'note-title';
+
+            noteTitle.textContent = note.title;
+
+            const noteDate =
+                document.createElement('div');
+
+            noteDate.className = 'note-date';
+
+            noteDate.textContent =
+                new Date(note.updatedAt)
+                .toLocaleString();
+
+            const deleteBtn =
+                document.createElement('button');
+
+            deleteBtn.className = 'delete-btn';
+
+            deleteBtn.textContent = '✕';
+
+            deleteBtn.addEventListener('click', async(e) => {
+
+                e.stopPropagation();
+
+                await deleteNote(note.id);
+
+            });
+
+            noteItem.appendChild(noteTitle);
+
+            noteItem.appendChild(noteDate);
+
+            noteItem.appendChild(deleteBtn);
+
+            noteItem.addEventListener('click', () => {
+
+                switchNote(note.id);
+
+            });
+
+            noteList.appendChild(noteItem);
+
+        });
+
+    }
+
+    function switchNote(id) {
+
+        const note =
+            notes.find(n => n.id === id);
+
         if (!note) return;
 
-        currentNoteId        = note.id;
-        titleInput.value     = note.title || '';
-        textarea.value       = note.content || '';
-        lastSavedContent     = note.content || '';
-        statusEl.textContent = '';
+        currentNoteId = id;
 
-        renderNoteList(); // refresh sidebar to show active state
+        titleInput.value = note.title;
+
+        textarea.value = note.content;
+
+        updateWordCount();
+
+        renderNoteList();
+
     }
 
-    // ─────────────────────────────────────────
-    // saveCurrentNote – save the open note to JSON
-    // ─────────────────────────────────────────
     async function saveCurrentNote() {
+
         if (!currentNoteId) return;
 
         const note = {
-            id:      currentNoteId,
-            title:   titleInput.value || 'Untitled',
-            content: textarea.value
+
+            id: currentNoteId,
+
+            title: titleInput.value || 'Untitled Note',
+
+            content: textarea.value,
+
+            createdAt: new Date().toISOString(),
+
+            updatedAt: new Date().toISOString()
+
         };
 
-        await window.electronAPI.saveNoteJson(note);
-        lastSavedContent = textarea.value;
+        await window.electronAPI.saveNote(note);
 
-        // Update the note in the local array too
-        const index = notes.findIndex(n => n.id === currentNoteId);
-        if (index !== -1) {
-            notes[index] = { ...notes[index], ...note, updatedAt: new Date().toISOString() };
+        const index =
+            notes.findIndex(n => n.id === note.id);
+
+        if (index >= 0) {
+
+            notes[index] = note;
+
+        } else {
+
+            notes.unshift(note);
+
         }
 
         renderNoteList();
-        statusEl.textContent = `Saved at ${new Date().toLocaleTimeString()}`;
+
+        statusEl.textContent =
+            'Note saved successfully';
+
     }
 
-    // ─────────────────────────────────────────
-    // deleteNote – remove a note
-    // ─────────────────────────────────────────
     async function deleteNote(id) {
-        const result = await window.electronAPI.newNote(); // reuse warning dialog
-        if (!result.confirmed) return;
+
+        const confirmDelete =
+            confirm('Delete this note?');
+
+        if (!confirmDelete) return;
 
         await window.electronAPI.deleteNote(id);
-        notes = notes.filter(n => n.id !== id);
 
-        // If we deleted the current note, clear the editor
-        if (currentNoteId === id) {
-            currentNoteId        = null;
-            titleInput.value     = '';
-            textarea.value       = '';
-            lastSavedContent     = '';
-            statusEl.textContent = 'Note deleted.';
+        notes =
+            notes.filter(note => note.id !== id);
+
+        if (notes.length > 0) {
+
+            switchNote(notes[0].id);
+
+        } else {
+
+            createNewNote();
+
         }
 
         renderNoteList();
+
     }
 
-    // ─────────────────────────────────────────
-    // Button Listeners
-    // ─────────────────────────────────────────
+    function createNewNote() {
 
-    // New Note button
-    newNoteBtn.addEventListener('click', async () => {
-        if (textarea.value !== lastSavedContent) {
-            const result = await window.electronAPI.newNote();
-            if (!result.confirmed) return;
-        }
+        const id =
+            Date.now().toString();
 
         const newNote = {
-            id:        Date.now().toString(),
-            title:     'Untitled',
-            content:   '',
+
+            id: id,
+
+            title: 'Untitled Note',
+
+            content: '',
+
             createdAt: new Date().toISOString(),
+
             updatedAt: new Date().toISOString()
+
         };
 
-        await window.electronAPI.saveNoteJson(newNote);
-        notes.unshift(newNote);     // add to the top of the list
-        currentNoteId        = newNote.id;
-        titleInput.value     = '';
-        textarea.value       = '';
-        lastSavedContent     = '';
+        notes.unshift(newNote);
+
+        currentNoteId = id;
+
+        titleInput.value = newNote.title;
+
+        textarea.value = '';
+
+        updateWordCount();
+
         renderNoteList();
-        titleInput.focus();         // move cursor to title field
-        statusEl.textContent = 'New note created.';
-    });
 
-    // Save button
-    saveBtn.addEventListener('click', async () => {
-        await saveCurrentNote();
-    });
-
-    // Save As button (file export)
-    saveAsBtn.addEventListener('click', async () => {
-        const result = await window.electronAPI.saveAs(textarea.value);
-        if (result.success) {
-            statusEl.textContent = `Saved as file: ${result.filePath}`;
-        }
-    });
-
-    // Open File button (file import)
-    openFileBtn.addEventListener('click', async () => {
-        const result = await window.electronAPI.openFile();
-        if (result.success) {
-            textarea.value       = result.content;
-            lastSavedContent     = result.content;
-            statusEl.textContent = `Opened: ${result.filePath}`;
-        }
-    });
-
-    // ─────────────────────────────────────────
-    // Auto-save with debounce
-    // ─────────────────────────────────────────
-
-    textarea.addEventListener('input', () => {
-        statusEl.textContent = 'Unsaved changes...';
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(saveCurrentNote, 5000);
-    });
-
-    // Also auto-save when title changes
-    titleInput.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(saveCurrentNote, 5000);
-    });
-
-    // ─────────────────────────────────────────
-    // Menu action listeners (main → renderer)
-    // ─────────────────────────────────────────
-
-    window.electronAPI.onMenuAction('menu-new-note', () => {
-        newNoteBtn.click();     // reuse the existing button logic
-    });
-
-    window.electronAPI.onMenuAction('menu-open-file', () => {
-        openFileBtn.click();    // reuse the existing button logic
-    });
-
-    window.electronAPI.onMenuAction('menu-save', () => {
-        saveBtn.click();        // reuse the existing button logic
-    });
-
-    window.electronAPI.onMenuAction('menu-save-as', () => {
-        saveAsBtn.click();      // reuse the existing button logic
-    });
-
-    // ─────────────────────────────────────────
-    // Startup – load all notes
-    // ─────────────────────────────────────────
-
-    notes = await window.electronAPI.getNotes();
-
-    if (notes.length > 0) {
-        // Open the most recently updated note
-        const mostRecent = notes.reduce((a, b) =>
-            new Date(a.updatedAt) > new Date(b.updatedAt) ? a : b
-        );
-        await switchNote(mostRecent.id);
-    } else {
-        // No notes yet – trigger New Note automatically
-        newNoteBtn.click();
     }
 
-    renderNoteList();
+    const settings =
+        await window.electronAPI.getSettings();
+
+    if (settings.fontSize) {
+
+        fontSize = settings.fontSize;
+
+        applyFontSize();
+
+    }
+
+    notes =
+        await window.electronAPI.getNotes();
+
+    if (notes.length > 0) {
+
+        const latestNote =
+            notes.reduce((latest, note) => {
+
+                return new Date(note.updatedAt) >
+                    new Date(latest.updatedAt) ?
+                    note :
+                    latest;
+
+            });
+
+        switchNote(latestNote.id);
+
+    } else {
+
+        createNewNote();
+
+    }
+
+    saveBtn.addEventListener('click', async() => {
+
+        await saveCurrentNote();
+
+    });
+
+    saveAsBtn.addEventListener('click', async() => {
+
+        const result =
+            await window.electronAPI.saveAs(
+                textarea.value
+            );
+
+        if (result.success) {
+
+            statusEl.textContent =
+                `Saved to: ${result.filePath}`;
+
+        }
+
+    });
+
+    openFileBtn.addEventListener('click', async() => {
+
+        const result =
+            await window.electronAPI.openFile();
+
+        if (result.success) {
+
+            textarea.value = result.text;
+
+            updateWordCount();
+
+            statusEl.textContent =
+                `Opened: ${result.filePath}`;
+
+        }
+
+    });
+
+    newNoteBtn.addEventListener('click', () => {
+
+        createNewNote();
+
+    });
+
+    increaseFontBtn.addEventListener('click', async() => {
+
+        fontSize = Math.min(32, fontSize + 2);
+
+        applyFontSize();
+
+        await saveFontSize();
+
+    });
+
+    decreaseFontBtn.addEventListener('click', async() => {
+
+        fontSize = Math.max(10, fontSize - 2);
+
+        applyFontSize();
+
+        await saveFontSize();
+
+    });
+
+    textarea.addEventListener('input', () => {
+
+        updateWordCount();
+
+        clearTimeout(autoSaveTimer);
+
+        autoSaveTimer = setTimeout(async() => {
+
+            await saveCurrentNote();
+
+            statusEl.textContent =
+                'Auto-saved';
+
+        }, 5000);
+
+    });
+
+    window.electronAPI.onMenuAction(
+        'menu-save',
+        () => {
+            saveBtn.click();
+        }
+    );
+
+    window.electronAPI.onMenuAction(
+        'menu-save-as',
+        () => {
+            saveAsBtn.click();
+        }
+    );
+
+    window.electronAPI.onMenuAction(
+        'menu-open-file',
+        () => {
+            openFileBtn.click();
+        }
+    );
+
+    window.electronAPI.onMenuAction(
+        'menu-new-note',
+        () => {
+            newNoteBtn.click();
+        }
+    );
+
 });
