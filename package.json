@@ -1,16 +1,1 @@
-{
-    "name": "quick-note-taker",
-    "version": "1.0.0",
-    "description": "My first Electron app",
-    "main": "main.js",
-    "scripts": {
-        "start": "electron ."
-    },
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-        "electron": "^40.10.1"
-    },
-    "keywords": [],
-    "type": "commonjs"
-}
+{"name":"quick-note-taker","version":"1.0.0","main":"main.js","scripts":{"start":"electron . --ozone-platform=x11 --disable-gpu"},"devDependencies":{"electron":"^40.10.3"},"description":"","keywords":[],"author":"","license":"ISC","type":"commonjs"}
